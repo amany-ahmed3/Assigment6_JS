@@ -1,0 +1,204 @@
+// Assignment 6 - MongoDB Shell Solutions
+
+// Use Database
+use assignment6
+
+
+// Q1: Create Explicit Books Collection with Validation
+db.createCollection("books", {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["title"],
+            properties: {
+                title: {
+                    bsonType: "string",
+                    minLength: 1,
+                    pattern: "\\S"
+                }
+            }
+        }
+    },
+    validationLevel: "strict",
+    validationAction: "error"
+});
+
+
+// Q2: Create Implicit Authors Collection
+db.authors.insertOne({
+    name: "William Shakespeare",
+    country: "England"
+});
+
+
+// Q3: Create Capped Logs Collection (1 MB)
+db.createCollection("logs", {
+    capped: true,
+    size: 1048576
+});
+
+
+// Q4: Create Index on Books Title
+db.books.createIndex({ title: 1 });
+
+
+// Q5: Insert One Book
+db.books.insertOne({
+    title: "Brave New World",
+    author: "Aldous Huxley",
+    year: 1932,
+    genres: ["Science Fiction", "Dystopian"]
+});
+
+
+// Q6: Insert Multiple Books
+db.books.insertMany([
+    {
+        title: "Future",
+        author: "Author One",
+        year: 1998,
+        genres: ["Science Fiction"]
+    },
+    {
+        title: "The Hobbit",
+        author: "J.R.R. Tolkien",
+        year: 1937,
+        genres: ["Fantasy", "Adventure"]
+    },
+    {
+        title: "Dune",
+        author: "Frank Herbert",
+        year: 2005,
+        genres: ["Science Fiction"]
+    },
+    {
+        title: "The Shining",
+        author: "Stephen King",
+        year: 1980,
+        genres: ["Horror"]
+    },
+    {
+        title: "Future",
+        author: "Author Two",
+        year: 2015,
+        genres: ["Drama"]
+    }
+]);
+
+
+// Q7: Insert One Log
+db.logs.insertOne({
+    bookId: db.books.findOne(
+        { title: "Brave New World" },
+        { _id: 1 }
+    )._id,
+    action: "Book added",
+    message: "A book was inserted"
+});
+
+
+// Q8: Update Future Book Year to 2022
+db.books.updateOne(
+    { title: "Future" },
+    { $set: { year: 2022 } }
+);
+
+
+// Q9: Find Book by Title
+db.books.find({
+    title: "Brave New World"
+});
+
+
+// Q10: Find Books Between 1990 and 2010
+db.books.find({
+    year: {
+        $gte: 1990,
+        $lte: 2010
+    }
+});
+
+
+// Q11: Find Books by Genre
+db.books.find({
+    genres: "Science Fiction"
+});
+
+
+// Q12: Skip 2, Limit 3, Sort by Year Descending
+db.books.find()
+    .sort({ year: -1 })
+    .skip(2)
+    .limit(3);
+
+
+// Q13: Find Books Where Year Is Integer
+db.books.find({
+    year: { $type: "int" }
+});
+
+
+// Q14: Exclude Horror and Science Fiction
+db.books.find({
+    genres: {
+        $nin: ["Horror", "Science Fiction"]
+    }
+});
+
+
+// Q15: Delete Books Published Before 2000
+db.books.deleteMany({
+    year: { $lt: 2000 }
+});
+
+
+// Q16: Aggregation - Filter and Sort
+db.books.aggregate([
+    {
+        $match: {
+            year: { $gt: 2000 }
+        }
+    },
+    {
+        $sort: { year: -1 }
+    }
+]);
+
+
+// Q17: Aggregation - Show Selected Fields
+db.books.aggregate([
+    {
+        $match: {
+            year: { $gt: 2000 }
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            title: 1,
+            author: 1,
+            year: 1
+        }
+    }
+]);
+
+
+// Q18: Aggregation - Unwind Genres
+db.books.aggregate([
+    {
+        $unwind: "$genres"
+    }
+]);
+
+
+// Q19: Aggregation - Join Books with Logs
+db.books.aggregate([
+    {
+        $lookup: {
+            from: "logs",
+            localField: "_id",
+            foreignField: "bookId",
+            as: "logs"
+        }
+    }
+]);
